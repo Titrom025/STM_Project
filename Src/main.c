@@ -1,7 +1,8 @@
+#include <malloc.h>
 #include "main.h"
-#include "screen.h"
 #include "IRQ_Handlers.h"
 #include "rtc.h"
+#include "lcd.h"
 
 void SET_SYSTICK_TIMES(uint32_t timesInSecond) {
     SystemCoreClockUpdate();
@@ -63,15 +64,16 @@ void SystemClock_Config(void)
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) { Error_Handler(); }
 }
 
+
 int main(void) {
     SystemClock_Config();
     SET_SYSTICK_TIMES(1000);
 
     RTC_Init();
     PIXEL_SCREEN_INIT();
-    LCD_INIT();
 
-    writeScreen();
+    INIT_LCD_IRQ();
+
 
     while(1) {}
 }

@@ -2,10 +2,11 @@
 // Created by Roman Titkov on 30.05.2021.
 //
 
+#include "lcd.h"
 #include "main.h"
 #include "IRQ_Handlers.h"
 
-extern int screen[8];
+int screen[8];
 extern RTC_HandleTypeDef hrtc;
 extern RTC_TimeTypeDef sTime;
 
@@ -15,8 +16,7 @@ void SysTick_Handler() {
     timerCount++;
 }
 
-void RTC_IRQHandler(void)
-{
+void RTC_IRQHandler(void) {
     static int val = 0;
     RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
     GPIOC->MODER |= GPIO_MODER_MODER9_0;
@@ -30,13 +30,20 @@ void RTC_IRQHandler(void)
     RTC_TimeTypeDef sTime;
     RTC_DateTypeDef sDate;
 
-    if (HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
+    if (HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK) { Error_Handler(); }
 
     if (HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
 
     screen[2] = sTime.Hours;
     screen[1] = sTime.Minutes;
     screen[0] = sTime.Seconds;
+
+    Lcd_clear();
+
+    char buffer[16];
+    sprintf(buffer, "    %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+
+    Lcd_string(buffer);
 
     HAL_RTC_AlarmIRQHandler(&hrtc);
 }
