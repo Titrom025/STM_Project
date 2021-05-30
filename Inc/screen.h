@@ -1,3 +1,6 @@
+#ifndef STM_PROJECT_SCREEN_H
+#define STM_PROJECT_SCREEN_H
+
 #define RW_SET_MODER (GPIOB->MODER |= GPIO_MODER_MODER3_0);         // Init RW
 #define D4_SET_MODER (GPIOB->MODER |= GPIO_MODER_MODER4_0);         // Init D4
 #define D5_SET_MODER (GPIOB->MODER |= GPIO_MODER_MODER5_0);         // Init D5
@@ -36,7 +39,12 @@
 #define BIT_1_MASK                                               (0x02)
 #define BIT_0_MASK                                               (0x01)
 
-#ifndef STM_PROJECT_SCREEN_H
-#define STM_PROJECT_SCREEN_H
+extern volatile int timerCount;
+
+void LCD_INIT();
+void waitMls(int mls);
+void enablePulse();
+void initScreeen();
+void writeScreen();
 
 #endif //STM_PROJECT_SCREEN_H

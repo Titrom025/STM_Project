@@ -1,7 +1,11 @@
 #include "main.h"
+#include "IRQ_Handlers.h"
+#include "screen.h"
 
 uint8_t screen[8] = {0};
-volatile static int timerCount = 0;
+volatile int timerCount = 0;
+RTC_HandleTypeDef hrtc;
+RTC_TimeTypeDef sTime = {0};
 
 void SET_SYSTICK_TIMES(uint32_t timesInSecond) {
     SystemCoreClockUpdate();
@@ -25,184 +29,13 @@ void GPI_INIT() {
     GPIOA->MODER |= GPIO_MODER_MODER8_0;
 }
 
-
-void SPI2_IRQHandler(void) {
-    static int index = 0;
-
-    if ((SPI2->SR & SPI_SR_RXNE)) {
-        GPIOA->BSRR = GPIO_BSRR_BS_8;
-        SPI2->DR;
-
-        GPIOA->BSRR = GPIO_BSRR_BR_8;
-        SPI2->DR = screen[index] | (1 << (index + 8));
-        index = (index + 1) % 8;
-    }
-}
-
 void PIXEL_SCREEN_INIT() {
     GPI_INIT();
     NVIC_EnableIRQ(SPI2_IRQn);
     SPI2->DR = 0;
 }
 
-void initPeriphery() {
-    // pixel GPIOB, GPIOC
-    RCC->AHBENR |= RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN;
-    GPIOC->OSPEEDR |= GPIO_SPEED_FREQ_HIGH;
 
-    RW_SET_MODER    // pixel RW
-    D4_SET_MODER    // pixel D4
-    D5_SET_MODER    // pixel D5
-    D6_SET_MODER    // pixel D6
-    D7_SET_MODER    // pixel D7
-    RS_SET_MODER    // pixel RS
-    EN_SET_MODER    // pixel EN
-    LIGHT_SET_MODER // pixel Light
-}
-
-void waitMls(int mls) {
-    int timerState = timerCount;
-    while (timerCount - timerState < mls + 1);
-}
-
-void enablePulse() {
-    ENABLE_EN
-    waitMls(1);
-    DISABLE_EN
-    DISABLE_ALL
-    waitMls(1);
-}
-
-void initScreeen() {
-    waitMls(200);
-
-    ENABLE_D5
-    enablePulse();
-
-    ENABLE_D5
-    enablePulse();
-    ENABLE_NOTHING
-    enablePulse();
-
-    ENABLE_NOTHING
-    enablePulse();
-    ENABLE_D5
-    ENABLE_D6
-    ENABLE_D7
-    enablePulse();
-
-    ENABLE_LIGHT
-}
-
-void writeScreen() {
-
-    ENABLE_RS
-    ENABLE_D6
-    enablePulse();
-    ENABLE_RS
-    ENABLE_D7
-    enablePulse();
-
-    ENABLE_RS
-    ENABLE_D6
-    enablePulse();
-    ENABLE_RS
-    ENABLE_D6
-    ENABLE_D4
-    enablePulse();
-
-    ENABLE_RS
-    ENABLE_D6
-    enablePulse();
-    ENABLE_RS
-    ENABLE_D7
-    enablePulse();
-
-    ENABLE_RS
-    ENABLE_D6
-    enablePulse();
-    ENABLE_RS
-    ENABLE_D6
-    ENABLE_D4
-    enablePulse();
-
-    ENABLE_RS
-    ENABLE_D5
-    enablePulse();
-    ENABLE_RS
-    enablePulse();
-
-    ENABLE_RS
-    ENABLE_D7
-    ENABLE_D6
-    ENABLE_D5
-    enablePulse();
-    ENABLE_RS
-    ENABLE_D7
-    ENABLE_D6
-    ENABLE_D5
-    ENABLE_D4
-    enablePulse();
-}
-
-void SysTick_Handler() {
-    timerCount++;
-}
-
-void RTC_Update(int volatile value)
-{
-    // Выключаем защиту от записи
-    RTC->WPR = 0xCA;
-    RTC->WPR = 0x53;
-
-    // Входим в режим редактирования
-    RTC->ISR |= RTC_ISR_INIT;
-    // Ждем подтверждения входа в режим редактирования
-    while( !(RTC->ISR & RTC_ISR_INITF) ){};
-
-    // Устанавливаем асинхронный предделитель на 100(99+1).
-    RTC->PRER = (uint32_t)(99 << 16);
-    // Установим синхронный предделитель на 400(399+1).
-    RTC->PRER |= (uint32_t)399;
-
-    // Устанавливаем время
-//    TR = ( ((uint32_t)(2/10*16 + 1%10) << 16) | ((uint32_t)(3/10*16 + 2%10) << 8) | ((uint32_t)2/10*16 + 2%10) );
-//    RTC->TR = TR;
-    // Устанавливаем дату
-//    DR = (uint32_t)(2021/10*16 + 2021%10) << 16  | (uint32_t)(7/10*16 + 7%10) << 13 | (uint32_t)(4/10*16 + 4%10) << 8 | (uint32_t)(3/10*16 + 3%10);
-//    RTC->DR = DR;
-
-    RTC->ISR &= ~(RTC_ISR_INIT);
-    RTC->WPR = 0xFF;
-}
-
-RTC_HandleTypeDef hrtc;
-
-
-void RTC_IRQHandler(void)
-{
-    static int val = 0;
-    RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
-    GPIOC->MODER |= GPIO_MODER_MODER9_0;
-    if (val) {
-        GPIOC->BSRR = GPIO_BSRR_BR_9;
-    } else {
-        GPIOC->BSRR = GPIO_BSRR_BS_9;
-    }
-    val = !val;
-
-    RTC_TimeTypeDef sTime;
-    RTC_DateTypeDef sDate;
-
-    if (HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
-
-    if (HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
-
-    screen[1] = sTime.Minutes;
-    screen[0] = sTime.Seconds;
-
-    HAL_RTC_AlarmIRQHandler(&hrtc);
-}
 
 void SystemClock_Config(void)
 {
@@ -236,10 +69,14 @@ void SystemClock_Config(void)
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) { Error_Handler(); }
 }
 
-static void MX_RTC_Init(void)
+static void RTC_SET_TIME(void) {
+    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
+}
+
+static void RTC_Init(void)
 {
-    RTC_TimeTypeDef sTime = {0};
-    RTC_DateTypeDef sDate = {0};
+//    RTC_TimeTypeDef sTime = {0};
+//    RTC_DateTypeDef sDate = {0};
     RTC_AlarmTypeDef sAlarm = {0};
 
     /** Initialize RTC Only
@@ -253,19 +90,19 @@ static void MX_RTC_Init(void)
     hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
     if (HAL_RTC_Init(&hrtc) != HAL_OK) { Error_Handler(); }
 
-    /** Initialize RTC and set the Time and Date
-    */
-    sTime.Hours = 0x0;
-    sTime.Minutes = 0x0;
-    sTime.Seconds = 0x0;
-    sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-    sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-//    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
-
-    sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-    sDate.Month = RTC_MONTH_JANUARY;
-    sDate.Date = 0x1;
-    sDate.Year = 0x0;
+//    /** Initialize RTC and set the Time and Date
+//    */
+//    sTime.Hours = 0x0;
+//    sTime.Minutes = 0x0;
+//    sTime.Seconds = 0x0;
+//    sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+//    sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+////    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
+//
+//    sDate.WeekDay = RTC_WEEKDAY_MONDAY;
+//    sDate.Month = RTC_MONTH_JANUARY;
+//    sDate.Date = 0x1;
+//    sDate.Year = 0x0;
 
 //    if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler();}
     /** Enable the Alarm A
@@ -297,18 +134,15 @@ void Error_Handler(void) {
 }
 
 int main(void) {
-    PIXEL_SCREEN_INIT();
-    SET_SYSTICK_TIMES(1000);
-//    rtcInit();
-
     SystemClock_Config();
-    MX_RTC_Init();
+    SET_SYSTICK_TIMES(1000);
 
-//    RTC->CR |= RTC_CR_
-//    initPeriphery();
-//    initScreeen();
-//    writeScreen();
+    RTC_Init();
+    PIXEL_SCREEN_INIT();
+    LCD_INIT();
+    
+    writeScreen();
+
     while(1) {}
 }
-
 
