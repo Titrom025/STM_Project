@@ -5,6 +5,12 @@
 #include "main.h"
 #include "IRQ_Handlers.h"
 
+extern int screen[8];
+extern RTC_HandleTypeDef hrtc;
+extern RTC_TimeTypeDef sTime;
+
+volatile int timerCount;
+
 void SysTick_Handler() {
     timerCount++;
 }
@@ -46,4 +52,16 @@ void SPI2_IRQHandler(void) {
         SPI2->DR = screen[index] | (1 << (index + 8));
         index = (index + 1) % 8;
     }
+}
+
+void Error_Handler(void) {
+    screen[0] = 129;
+    screen[1] = 66;
+    screen[2] = 36;
+    screen[3] = 24;
+    screen[4] = 24;
+    screen[5] = 36;
+    screen[6] = 66;
+    screen[7] = 129;
+    while (1) {}
 }

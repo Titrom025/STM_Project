@@ -39,8 +39,6 @@
 #define BIT_1_MASK                                               (0x02)
 #define BIT_0_MASK                                               (0x01)
 
-extern volatile int timerCount;
-
 void LCD_INIT();
 void waitMls(int mls);
 void enablePulse();

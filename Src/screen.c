@@ -1,6 +1,9 @@
 #include "screen.h"
 #include "main.h"
 
+extern volatile int timerCount;
+int screen[8];
+
 void LCD_INIT() {
     RCC->AHBENR |= RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN;
     GPIOC->OSPEEDR |= GPIO_SPEED_FREQ_HIGH;

@@ -1,11 +1,7 @@
 #include "main.h"
-#include "IRQ_Handlers.h"
 #include "screen.h"
-
-uint8_t screen[8] = {0};
-volatile int timerCount = 0;
-RTC_HandleTypeDef hrtc;
-RTC_TimeTypeDef sTime = {0};
+#include "IRQ_Handlers.h"
+#include "rtc.h"
 
 void SET_SYSTICK_TIMES(uint32_t timesInSecond) {
     SystemCoreClockUpdate();
@@ -34,8 +30,6 @@ void PIXEL_SCREEN_INIT() {
     NVIC_EnableIRQ(SPI2_IRQn);
     SPI2->DR = 0;
 }
-
-
 
 void SystemClock_Config(void)
 {
@@ -69,70 +63,6 @@ void SystemClock_Config(void)
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) { Error_Handler(); }
 }
 
-static void RTC_SET_TIME(void) {
-    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
-}
-
-static void RTC_Init(void)
-{
-//    RTC_TimeTypeDef sTime = {0};
-//    RTC_DateTypeDef sDate = {0};
-    RTC_AlarmTypeDef sAlarm = {0};
-
-    /** Initialize RTC Only
-    */
-    hrtc.Instance = RTC;
-    hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-    hrtc.Init.AsynchPrediv = 127;
-    hrtc.Init.SynchPrediv = 319;
-    hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
-    hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
-    hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-    if (HAL_RTC_Init(&hrtc) != HAL_OK) { Error_Handler(); }
-
-//    /** Initialize RTC and set the Time and Date
-//    */
-//    sTime.Hours = 0x0;
-//    sTime.Minutes = 0x0;
-//    sTime.Seconds = 0x0;
-//    sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-//    sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-////    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
-//
-//    sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-//    sDate.Month = RTC_MONTH_JANUARY;
-//    sDate.Date = 0x1;
-//    sDate.Year = 0x0;
-
-//    if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler();}
-    /** Enable the Alarm A
-    */
-    sAlarm.AlarmTime.Hours = 0x0;
-    sAlarm.AlarmTime.Minutes = 0x0;
-    sAlarm.AlarmTime.Seconds = 0x0;
-    sAlarm.AlarmTime.SubSeconds = 0x0;
-    sAlarm.AlarmTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-    sAlarm.AlarmTime.StoreOperation = RTC_STOREOPERATION_RESET;
-    sAlarm.AlarmMask = RTC_ALARMMASK_ALL;
-    sAlarm.AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_ALL;
-    sAlarm.AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE;
-    sAlarm.AlarmDateWeekDay = 0x1;
-    sAlarm.Alarm = RTC_ALARM_A;
-    if (HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
-}
-
-void Error_Handler(void) {
-    screen[0] = 129;
-    screen[1] = 66;
-    screen[2] = 36;
-    screen[3] = 24;
-    screen[4] = 24;
-    screen[5] = 36;
-    screen[6] = 66;
-    screen[7] = 129;
-    while (1) {}
-}
-
 int main(void) {
     SystemClock_Config();
     SET_SYSTICK_TIMES(1000);
@@ -140,7 +70,7 @@ int main(void) {
     RTC_Init();
     PIXEL_SCREEN_INIT();
     LCD_INIT();
-    
+
     writeScreen();
 
     while(1) {}

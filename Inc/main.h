@@ -8,9 +8,6 @@ extern "C" {
 #include "stm32f0xx_hal.h"
 #include "stdbool.h"
 
-void Error_Handler(void);
-
-
 #define NCS_MEMS_SPI_Pin GPIO_PIN_0
 #define NCS_MEMS_SPI_GPIO_Port GPIOC
 #define MEMS_INT1_Pin GPIO_PIN_1
