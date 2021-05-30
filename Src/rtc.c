@@ -1,11 +1,10 @@
+#include <stdbool.h>
 #include "rtc.h"
 #include "IRQ_Handlers.h"
+#include "lcd.h"
 
+extern int cursorPosition;
 RTC_HandleTypeDef hrtc;
-
-//void RTC_SET_TIME(void) {
-//    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
-//}
 
 void RTC_Init(void) {
     RTC_AlarmTypeDef sAlarm = {0};
@@ -31,4 +30,53 @@ void RTC_Init(void) {
     sAlarm.AlarmDateWeekDay = 0x1;
     sAlarm.Alarm = RTC_ALARM_A;
     if (HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
+}
+
+void changeValue(RTC_TimeTypeDef *time, bool up) {
+    int diff = 1;
+    if (up == false)
+        diff = -1;
+
+    switch (cursorPosition) {
+        case HOURS_T: {
+            time->Hours = ((time->Hours / 10 * 10 + 10 * diff + 30) % 30) + ((time->Hours) % 10);
+            if (time->Hours > 23) {
+                time->Hours = 20;
+                drawDigit(time->Hours);
+            } else {
+                drawDigit(time->Hours / 10);
+            }
+            break;
+        }
+        case HOURS_U: {
+            if (time->Hours / 10 == 2) {
+                time->Hours = (time->Hours / 10) * 10 + ((time->Hours + 4 + diff) % 4);
+            } else {
+                time->Hours = (time->Hours / 10) * 10 + ((time->Hours + 10 + diff) % 10);
+            }
+            drawDigit(time->Hours % 10);
+            break;
+        }
+        case MINUTES_T: {
+            time->Minutes = ((time->Minutes / 10 * 10 + 10 * diff + 60) % 60) + ((time->Minutes) % 10);
+            drawDigit(time->Minutes / 10);
+            break;
+        }
+        case MINUTES_U: {
+            time->Minutes = (time->Minutes / 10) * 10 + ((time->Minutes + 10 + diff) % 10);
+            drawDigit(time->Minutes % 10);
+            break;
+        }
+        case SECONDS_T: {
+            time->Seconds = ((time->Seconds / 10 * 10 + 10 * diff + 60) % 60) + ((time->Seconds) % 10);
+            drawDigit(time->Seconds / 10);
+            break;
+        }
+
+        case SECONDS_U: {
+            time->Seconds = (time->Seconds / 10) * 10 + ((time->Seconds + 10 + diff) % 10);
+            drawDigit(time->Seconds % 10);
+            break;
+        }
+    }
 }

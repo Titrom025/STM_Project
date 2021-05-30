@@ -4,6 +4,7 @@ const uint8_t ROW_16[] = {0x00, 0x40, 0x10, 0x50};
 extern int screen[8];
 extern volatile int timerCount;
 extern RTC_HandleTypeDef hrtc;
+extern int cursorPosition;
 
 static Lcd_HandleTypeDef lcd;
 RTC_DateTypeDef sDate;
@@ -22,7 +23,6 @@ void INIT_LCD_IRQ() {
             D4_Pin, D5_Pin, D6_Pin, D7_Pin};
 
     lcd = Lcd_create(ports, pins, RS_GPIO_Port, RS_Pin, EN_GPIO_Port, EN_Pin, RW_GPIO_Port, RW_Pin);
-//    Lcd_clear();
 }
 
 Lcd_HandleTypeDef Lcd_create(
@@ -46,9 +46,8 @@ Lcd_HandleTypeDef Lcd_create(
     GPIO_LCD_INIT();
 
 	Lcd_init();
-    ENABLE_LIGHT
 
-    RTC_DateTypeDef sDate;
+    ENABLE_LIGHT
 
     HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 
@@ -68,7 +67,6 @@ Lcd_HandleTypeDef Lcd_create(
 
 void GPIO_LCD_INIT() {
     RCC->AHBENR |= RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN;
-    GPIOC->OSPEEDR |= GPIO_SPEED_FREQ_HIGH;
 
     RW_SET_MODER    // pixel RW
     D4_SET_MODER    // pixel D4
@@ -82,22 +80,36 @@ void GPIO_LCD_INIT() {
 
 void Lcd_init()
 {
-    waitMls(100);
-    lcd_write(0x2);
-    lcd_write_command(0b00100000);
-    lcd_write_command(0b00001100);
-    lcd_write_command(0b00000110);
-}
+    GPIOB->BSRR |= GPIO_BSRR_BR_3;
+    GPIOB->BSRR |= GPIO_BSRR_BR_12;
+    waitMls(1000);
 
-/**
- * Write a number on the current position
- */
-void Lcd_int(int number)
-{
-    Lcd_clear();
-	char buffer[16];
-	sprintf(buffer, "    HEHE: %d", number);
-	Lcd_string(buffer);
+    lcd_write(0x3);
+    waitMls(10);
+
+    lcd_write(0x3);
+    waitMls(10);
+
+    lcd_write(0x3);
+    waitMls(10);
+
+    lcd_write(0x2);
+    waitMls(10);
+
+    lcd_write_command(0x20);
+    lcd_write_command(0x08);
+    lcd_write_command(0x0C);
+    lcd_write_command(0b00000110);
+
+    lcd_write_command(0x40);
+    lcd_write_data(0b00000000);
+    lcd_write_data(0b00000100);
+    lcd_write_data(0b00001110);
+    lcd_write_data(0b00001110);
+    lcd_write_data(0b00001110);
+    lcd_write_data(0b00011111);
+    lcd_write_data(0b00000100);
+    lcd_write_data(0b00000000);
 }
 
 /**
@@ -109,6 +121,46 @@ void Lcd_string(char * string)
 	{
 		lcd_write_data(string[i]);
 	}
+}
+
+void drawDigit(int digit) {
+    char buffer[3];
+    sprintf(buffer, "%d", digit);
+    Lcd_string(buffer);
+    Lcd_cursor(0, cursorPosition);
+}
+
+void drawOnlyChanges(RTC_TimeTypeDef *time) {
+    if (sTime.Hours / 10 != time->Hours / 10) {
+        cursorPosition = HOURS_T;
+        Lcd_cursor(0, cursorPosition);
+        drawDigit(sTime.Hours / 10);
+    }
+    if (sTime.Hours % 10 != time->Hours % 10) {
+        cursorPosition = HOURS_U;
+        Lcd_cursor(0, cursorPosition);
+        drawDigit(sTime.Hours % 10);
+    }
+    if (sTime.Minutes / 10 != time->Minutes / 10) {
+        cursorPosition = MINUTES_T;
+        Lcd_cursor(0, cursorPosition);
+        drawDigit(sTime.Minutes / 10);
+    }
+    if (sTime.Minutes % 10 != time->Minutes % 10) {
+        cursorPosition = MINUTES_U;
+        Lcd_cursor(0, cursorPosition);
+        drawDigit(sTime.Minutes % 10);
+    }
+    if (sTime.Seconds / 10 != time->Seconds / 10) {
+        cursorPosition = SECONDS_T;
+        Lcd_cursor(0, cursorPosition);
+        drawDigit(sTime.Seconds / 10);
+    }
+    if (sTime.Seconds % 10 != time->Seconds % 10) {
+        cursorPosition = SECONDS_U;
+        Lcd_cursor(0, cursorPosition);
+        drawDigit(sTime.Seconds % 10);
+    }
 }
 
 /**
@@ -126,13 +178,6 @@ void Lcd_clear() {
 	lcd_write_command(CLEAR_DISPLAY);
 }
 
-void Lcd_define_char(uint8_t code, uint8_t bitmap[]){
-	lcd_write_command(SETCGRAM_ADDR + (code << 3));
-	for(uint8_t i=0;i<8;++i){
-		lcd_write_data(bitmap[i]);
-	}
-}
-
 int checkForBusy() {
     HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, LCD_COMMAND_REG);
     HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, LCD_DATA_REG);			// Write to data register
@@ -142,24 +187,6 @@ int checkForBusy() {
 
     HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, LCD_COMMAND_REG);
     return HAL_GPIO_ReadPin(lcd.rw_port, lcd.rw_pin) == GPIO_PIN_SET;
-}
-
-int getCurrentAC() {
-    HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, LCD_COMMAND_REG);
-    HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, LCD_DATA_REG);			// Write to data register
-
-//    lcd_write(0);
-    int bit6 = 0; //HAL_GPIO_ReadPin(lcd.data_port[2], lcd.data_pin[2]);
-    int bit5 = 0; //HAL_GPIO_ReadPin(lcd.data_port[1], lcd.data_pin[1]);
-    int bit4 = 0; //HAL_GPIO_ReadPin(lcd.data_port[0], lcd.data_pin[0]);
-//    lcd_write(0);
-    int bit3 = HAL_GPIO_ReadPin(lcd.data_port[3], lcd.data_pin[3]);
-    int bit2 = HAL_GPIO_ReadPin(lcd.data_port[2], lcd.data_pin[2]);
-    int bit1 = HAL_GPIO_ReadPin(lcd.data_port[1], lcd.data_pin[1]);
-    int bit0 = HAL_GPIO_ReadPin(lcd.data_port[0], lcd.data_pin[0]);
-
-    HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, LCD_COMMAND_REG);
-    return (bit6 << 6) | (bit5 << 5) | (bit4 << 4) | (bit3 << 3) | (bit2 << 2) | (bit1 << 1) | bit0;
 }
 
 void lcd_write_command(uint8_t command)

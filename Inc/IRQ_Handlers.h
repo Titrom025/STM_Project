@@ -3,6 +3,5 @@
 
 void SPI2_IRQHandler(void);
 void RTC_IRQHandler(void);
-void SysTick_Handler();
 void Error_Handler(void);
 #endif

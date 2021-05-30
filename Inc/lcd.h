@@ -80,10 +80,12 @@ Lcd_HandleTypeDef Lcd_create(
         Lcd_PortType rw_port, Lcd_PinType rw_pin);
 void Lcd_define_char(uint8_t code, uint8_t bitmap[]);
 void Lcd_clear();
+void drawDigit(int digit);
+void drawOnlyChanges(RTC_TimeTypeDef *time);
 
-static void lcd_write_data(uint8_t data);
+void lcd_write_data(uint8_t data);
 void lcd_write_command(uint8_t command);
-static void lcd_write(uint8_t data);
+void lcd_write(uint8_t data);
 
 #define RS_Pin GPIO_PIN_12
 #define RS_GPIO_Port GPIOB
