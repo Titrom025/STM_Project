@@ -7,14 +7,20 @@ volatile int button = NO_BUTTON;
 void updateButton() {
     static bool input1 = false;
 
+    if (GPIOA->IDR & GPIO_IDR_0) {
+        button = USER_BUTTON;
+        return;
+    }
+
     if (input1) {
         GPIOA->BSRR = GPIO_BSRR_BS_15;
+        for (int i = 0; i < 1; ++i) {}
 
         if (GPIOA->IDR & GPIO_IDR_4) {
-        	button = TOP;
+        	button = LEFT_BUTTON;
             return;
         } else if (GPIOA->IDR & GPIO_IDR_5) {
-        	button = DOWN;
+        	button = RIGHT_BUTTON;
             return;
         } else {
         	button = NO_BUTTON;
@@ -26,10 +32,10 @@ void updateButton() {
         GPIOC->BSRR = GPIO_BSRR_BS_12;
 
         if (GPIOA->IDR & GPIO_IDR_4) {
-        	button = LEFT;
+        	button = TOP_BUTTON;
             return;
         } else if (GPIOA->IDR & GPIO_IDR_5) {
-        	button = RIGHT;
+        	button = DOWN_BUTTON;
             return;
         } else {
         	button = NO_BUTTON;

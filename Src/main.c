@@ -26,6 +26,23 @@ void GPI_INIT() {
     GPIOA->MODER |= GPIO_MODER_MODER8_0;
 }
 
+void BUTTONS_INIT() {
+    RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+    RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+
+    GPIOC->MODER |= GPIO_MODER_MODER6_0;
+    GPIOC->MODER |= GPIO_MODER_MODER7_0;
+    GPIOC->MODER |= GPIO_MODER_MODER8_0;
+    GPIOC->MODER |= GPIO_MODER_MODER9_0;
+
+    GPIOC->MODER |= GPIO_MODER_MODER12_0;
+    GPIOA->MODER |= GPIO_MODER_MODER15_0;
+
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPDR0_1;
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPDR4_1;
+    GPIOA->PUPDR |= GPIO_PUPDR_PUPDR5_1;
+}
+
 void PIXEL_SCREEN_INIT() {
     GPI_INIT();
     NVIC_EnableIRQ(SPI2_IRQn);
@@ -64,16 +81,15 @@ void SystemClock_Config(void)
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) { Error_Handler(); }
 }
 
-
 int main(void) {
     SystemClock_Config();
     SET_SYSTICK_TIMES(1000);
 
     RTC_Init();
     PIXEL_SCREEN_INIT();
+    BUTTONS_INIT();
 
     INIT_LCD_IRQ();
-
 
     while(1) {}
 }

@@ -1,19 +1,72 @@
-//
-// Created by Roman Titkov on 30.05.2021.
-//
-
 #include "lcd.h"
 #include "main.h"
 #include "IRQ_Handlers.h"
+#include "button_lib.h"
+
+#define TIMER_LIMIT 100
+
+volatile int timerCount;
+volatile int buttonPressed = -1;
+volatile static bool led_states[5];
+volatile static int led_buttons_count[5];
+int lastPressed = NO_BUTTON;
 
 int screen[8];
+
 extern RTC_HandleTypeDef hrtc;
 extern RTC_TimeTypeDef sTime;
 
-volatile int timerCount;
+bool editMode = false;
+volatile int cursorPosition = 0;
 
+void enterEditMode() {
+    cursorPosition = 11;
+    lcd_write_command(0b00001110);
+    Lcd_cursor(0, cursorPosition);
+    editMode = true;
+}
+
+void exitEditMode() {
+    lcd_write_command(0b00001100);
+    editMode = false;
+}
 void SysTick_Handler() {
     timerCount++;
+    updateButton();
+    buttonPressed = returnButton();
+
+    if (buttonPressed == NO_BUTTON) {
+        lastPressed = NO_BUTTON;
+        GPIOC->BSRR |= GPIO_BSRR_BR_8;
+        return;
+    }
+
+    if (timerCount - led_buttons_count[buttonPressed] > TIMER_LIMIT && lastPressed != buttonPressed) {
+        led_states[buttonPressed] = !led_states[buttonPressed];
+        led_buttons_count[buttonPressed] = timerCount;
+        lastPressed = buttonPressed;
+    } else {
+        return;
+    }
+
+    if (buttonPressed == TOP_BUTTON) {
+
+    } else if (buttonPressed == DOWN_BUTTON) {
+
+    } else if (buttonPressed == LEFT_BUTTON) {
+        cursorPosition--;
+        Lcd_cursor(0, cursorPosition);
+    } else if (buttonPressed == RIGHT_BUTTON) {
+        cursorPosition++;
+        Lcd_cursor(0, cursorPosition);
+        cursorPosition = getCurrentAC();
+    } else if (buttonPressed == USER_BUTTON) {
+        if (editMode) {
+            exitEditMode();
+        } else {
+            enterEditMode();
+        }
+    }
 }
 
 void RTC_IRQHandler(void) {
@@ -38,12 +91,13 @@ void RTC_IRQHandler(void) {
     screen[1] = sTime.Minutes;
     screen[0] = sTime.Seconds;
 
-    Lcd_clear();
+    if (editMode == false) {
+        Lcd_clear();
 
-    char buffer[16];
-    sprintf(buffer, "    %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
-
-    Lcd_string(buffer);
+        char buffer[16];
+        sprintf(buffer, "    %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+        Lcd_string(buffer);
+    }
 
     HAL_RTC_AlarmIRQHandler(&hrtc);
 }

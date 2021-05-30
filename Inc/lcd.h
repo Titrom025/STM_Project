@@ -56,15 +56,17 @@ typedef struct {
 	Lcd_PortType rs_port;
 	Lcd_PinType rs_pin;
 
+    Lcd_PortType rw_port;
+    Lcd_PinType rw_pin;
+
 	Lcd_PortType en_port;
 	Lcd_PinType en_pin;
-
-	int needUpdate;
 } Lcd_HandleTypeDef;
 
 
 /************************************** Public functions **************************************/
 void INIT_LCD_IRQ();
+int getCurrentAC();
 static void waitMls(int mls);
 void GPIO_LCD_INIT();
 void Lcd_init();
@@ -74,16 +76,19 @@ void Lcd_cursor(uint8_t row, uint8_t col);
 Lcd_HandleTypeDef Lcd_create(
 		Lcd_PortType port[], Lcd_PinType pin[],
 		Lcd_PortType rs_port, Lcd_PinType rs_pin,
-		Lcd_PortType en_port, Lcd_PinType en_pin);
+		Lcd_PortType en_port, Lcd_PinType en_pin,
+        Lcd_PortType rw_port, Lcd_PinType rw_pin);
 void Lcd_define_char(uint8_t code, uint8_t bitmap[]);
 void Lcd_clear();
 
 static void lcd_write_data(uint8_t data);
-static void lcd_write_command(uint8_t command);
+void lcd_write_command(uint8_t command);
 static void lcd_write(uint8_t data);
 
 #define RS_Pin GPIO_PIN_12
 #define RS_GPIO_Port GPIOB
+#define RW_Pin GPIO_PIN_3
+#define RW_GPIO_Port GPIOB
 #define EN_Pin GPIO_PIN_4
 #define EN_GPIO_Port GPIOC
 #define D4_Pin GPIO_PIN_4
