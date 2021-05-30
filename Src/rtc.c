@@ -4,9 +4,9 @@
 RTC_HandleTypeDef hrtc;
 RTC_TimeTypeDef sTime = {0};
 
-void RTC_SET_TIME(void) {
-    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
-}
+//void RTC_SET_TIME(void) {
+//    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
+//}
 
 void RTC_Init(void) {
     RTC_AlarmTypeDef sAlarm = {0};

@@ -4,6 +4,6 @@
 #include "stm32f0xx_hal.h"
 
 void RTC_Init(void);
-void RTC_SET_TIME(void);
+//void RTC_SET_TIME(void);
 
 #endif

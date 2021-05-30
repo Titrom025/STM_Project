@@ -113,4 +113,13 @@ static void lcd_write(uint8_t data);
 #define EN_SET_MODER (GPIOC->MODER |= GPIO_MODER_MODER4_0);         // Init EN
 #define LIGHT_SET_MODER (GPIOC->MODER |= GPIO_MODER_MODER6_0);      // Init Light
 #define ENABLE_LIGHT (GPIOC->BSRR = GPIO_BSRR_BS_6);
+
+
+#define HOURS_T 4
+#define HOURS_U 5
+#define MINUTES_T 7
+#define MINUTES_U 8
+#define SECONDS_T 10
+#define SECONDS_U 11
+
 #endif

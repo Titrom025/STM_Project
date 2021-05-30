@@ -16,6 +16,8 @@ int screen[8];
 extern RTC_HandleTypeDef hrtc;
 extern RTC_TimeTypeDef sTime;
 
+RTC_TimeTypeDef editTime;
+
 bool editMode = false;
 volatile int cursorPosition = 0;
 
@@ -28,8 +30,68 @@ void enterEditMode() {
 
 void exitEditMode() {
     lcd_write_command(0b00001100);
+    if (HAL_RTC_SetTime(&hrtc, &editTime, RTC_FORMAT_BIN) != HAL_OK) { Error_Handler(); }
     editMode = false;
 }
+
+void drawDigit(int digit) {
+    char buffer[3];
+    sprintf(buffer, "%d", digit);
+    Lcd_string(buffer);
+    Lcd_cursor(0, cursorPosition);
+}
+
+void changeValue(bool up) {
+    int diff = 1;
+    if (up == false) 
+        diff = -1;
+
+    switch (cursorPosition) {
+        case HOURS_T: {
+            editTime.Hours = ((editTime.Hours / 10 * 10 + 10 * diff + 30) % 30) + ((editTime.Hours) % 10);
+            if (editTime.Hours > 23) {
+                editTime.Hours = 20;
+                drawDigit(editTime.Hours);
+            } else {
+                drawDigit(editTime.Hours / 10);
+            }
+            break;
+        }
+        case HOURS_U: {
+            if (editTime.Hours / 10 == 2) {
+                editTime.Hours = (editTime.Hours / 10) * 10 + ((editTime.Hours + 4 + diff) % 4);
+            } else {
+                editTime.Hours = (editTime.Hours / 10) * 10 + ((editTime.Hours + 10 + diff) % 10);
+            }
+            drawDigit(editTime.Hours % 10);
+            break;
+        }
+        case MINUTES_T: {
+            editTime.Minutes = ((editTime.Minutes / 10 * 10 + 10 * diff + 60) % 60) + ((editTime.Minutes) % 10);
+            drawDigit(editTime.Minutes / 10);
+            break;
+        }
+
+        case MINUTES_U: {
+            editTime.Minutes = (editTime.Minutes / 10) * 10 + ((editTime.Minutes + 10 + diff) % 10);
+            drawDigit(editTime.Minutes % 10);
+            break;
+        }
+        case SECONDS_T: {
+            editTime.Seconds = ((editTime.Seconds / 10 * 10 + 10 * diff + 60) % 60) + ((editTime.Seconds) % 10);
+            drawDigit(editTime.Seconds / 10);
+            break;
+        }
+
+        case SECONDS_U: {
+            editTime.Seconds = (editTime.Seconds / 10) * 10 + ((editTime.Seconds + 10 + diff) % 10);
+            drawDigit(editTime.Seconds % 10);
+            break;
+        }
+    }
+    screen[7] = editTime.Hours;
+}
+
 void SysTick_Handler() {
     timerCount++;
     updateButton();
@@ -50,8 +112,10 @@ void SysTick_Handler() {
     }
 
     if (buttonPressed == TOP_BUTTON) {
+        changeValue(true);
 
     } else if (buttonPressed == DOWN_BUTTON) {
+        changeValue(false);
 
     } else if (buttonPressed == LEFT_BUTTON) {
         cursorPosition--;
@@ -92,8 +156,10 @@ void RTC_IRQHandler(void) {
     screen[0] = sTime.Seconds;
 
     if (editMode == false) {
+        editTime.Seconds = sTime.Seconds;
+        editTime.Minutes = sTime.Minutes;
+        editTime.Hours = sTime.Hours;
         Lcd_clear();
-
         char buffer[16];
         sprintf(buffer, "    %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
         Lcd_string(buffer);
