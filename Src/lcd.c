@@ -3,8 +3,11 @@
 const uint8_t ROW_16[] = {0x00, 0x40, 0x10, 0x50};
 extern int screen[8];
 extern volatile int timerCount;
+extern RTC_HandleTypeDef hrtc;
 
 static Lcd_HandleTypeDef lcd;
+RTC_DateTypeDef sDate;
+RTC_TimeTypeDef sTime;
 
 static void waitMls(int mls) {
     int timerState = timerCount;
@@ -44,6 +47,17 @@ Lcd_HandleTypeDef Lcd_create(
 
 	Lcd_init();
     ENABLE_LIGHT
+
+    RTC_DateTypeDef sDate;
+
+    HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+
+    HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BCD);
+
+    Lcd_clear();
+    char buffer[16];
+    sprintf(buffer, "    %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+    Lcd_string(buffer);
 	return lcd;
 }
 
