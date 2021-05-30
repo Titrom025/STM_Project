@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
+//#define SCREEN_CONTROLLER
+#define BUTTONS_CONTROLLER
 #include "stm32f0xx_hal.h"
-#include "stdbool.h"
-#include "lcd.h"
 
 #define NCS_MEMS_SPI_Pin GPIO_PIN_0
 #define NCS_MEMS_SPI_GPIO_Port GPIOC

@@ -1,17 +1,21 @@
-#include <rtc.h>
+#include "main.h"
+#include "rtc.h"
 #include "lcd.h"
 #include "IRQ_Handlers.h"
 #include "button_lib.h"
 
 #define TIMER_LIMIT 100
 
-volatile int timerCount;
+volatile int timerCount = 0;
 volatile int buttonPressed = -1;
 volatile static bool led_states[5];
 volatile static int led_buttons_count[5];
 int lastPressed = NO_BUTTON;
 
 int screen[8];
+
+uint8_t incoming_messages = -1;
+uint8_t outcoming_messages = -1;
 
 extern RTC_HandleTypeDef hrtc;
 extern RTC_DateTypeDef sDate;
@@ -81,9 +85,16 @@ void enterDefaultMode() {
 
 void SysTick_Handler() {
     timerCount++;
-    updateButton();
-    buttonPressed = returnButton();
 
+    #ifdef BUTTONS_CONTROLLER
+        updateButton();
+        alarmDetected = incoming_messages;
+        outcoming_messages = returnButton();
+    #endif
+
+    #ifdef SCREEN_CONTROLLER
+    buttonPressed = incoming_messages;
+    outcoming_messages = alarmDetected;
     if (buttonPressed == NO_BUTTON) {
         lastPressed = NO_BUTTON;
         return;
@@ -217,6 +228,24 @@ void SysTick_Handler() {
 
             Lcd_cursor(0, cursorPosition);
         }
+    }
+#endif
+}
+
+
+void USART3_4_IRQHandler(void){
+    if (USART3->ISR & USART_ISR_TC){
+        USART3->ICR |= USART_ICR_TCCF;
+        USART3->ICR |= USART_ICR_IDLECF;
+    }else if(USART3->ISR & USART_ISR_RXNE){
+        incoming_messages = (uint8_t)USART3->RDR;
+        USART3->TDR = outcoming_messages;
+    }
+
+    if (incoming_messages > 0) {
+        GPIOC->BSRR = GPIO_BSRR_BS_8;
+    } else {
+        GPIOC->BSRR = GPIO_BSRR_BR_8;
     }
 }
 

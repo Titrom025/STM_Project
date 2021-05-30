@@ -65,7 +65,7 @@ typedef struct {
 
 
 /************************************** Public functions **************************************/
-void INIT_LCD_IRQ();
+void INIT_LCD();
 int getCurrentAC();
 static void waitMls(int mls);
 void GPIO_LCD_INIT();

@@ -1,7 +1,6 @@
-#include <malloc.h>
-#include "main.h"
 #include "IRQ_Handlers.h"
 #include "rtc.h"
+#include "main.h"
 #include "lcd.h"
 
 void SET_SYSTICK_TIMES(uint32_t timesInSecond) {
@@ -81,15 +80,47 @@ void SystemClock_Config(void)
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK) { Error_Handler(); }
 }
 
+static void USART_init(){
+    /* (1) Oversampling by 16, 9600 baud */
+    /* (2) Single-wire half-duplex mode */
+    /* (3) 8 data bit, 1 start bit, 1 stop bit, no parity, reception and
+                 transmission enabled */
+    RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+    RCC->AHBENR |= RCC_AHBENR_GPIODEN;
+    RCC->APB1ENR |= RCC_APB1ENR_USART3EN;
+    GPIOD->MODER |= GPIO_MODER_MODER2_1;
+    GPIOC->MODER |= GPIO_MODER_MODER10_1 | GPIO_MODER_MODER11_1;
+    GPIOC->AFR[1] |= 1 << (4 * (10 - 8)) | 1 << (4 * (11 - 8));
+    GPIOD->AFR[0] |= 1 << (4 * (2 - 0));
+    USART3->BRR = 480000 / 96;
+    USART3->CR3 |= USART_CR3_OVRDIS | USART_CR3_DEM;
+
+    USART3->CR1 |= USART_CR1_DEAT_0 | USART_CR1_DEAT_1 | USART_CR1_DEAT_2 | USART_CR1_DEAT_3 | USART_CR1_DEAT_4;
+    USART3->CR1 |= USART_CR1_DEDT_0 | USART_CR1_DEDT_1 | USART_CR1_DEDT_2 | USART_CR1_DEDT_3 | USART_CR1_DEDT_4;
+    USART3->CR1 |=  USART_CR1_UE | USART_CR1_TE | USART_CR1_RE;
+    while((USART3->ISR & USART_ISR_TC) == 0);
+    NVIC_EnableIRQ(USART3_4_IRQn);
+    USART3->CR1 |= USART_CR1_TCIE;
+    USART3->CR1 |= USART_CR1_RXNEIE;
+    USART3->TDR = 0x4;
+}
+
 int main(void) {
     SystemClock_Config();
     SET_SYSTICK_TIMES(1000);
 
-    RTC_Init();
-    PIXEL_SCREEN_INIT();
+#ifdef BUTTONS_CONTROLLER
     BUTTONS_INIT();
+#endif
 
-    INIT_LCD_IRQ();
+#ifdef SCREEN_CONTROLLER
+    INIT_LCD();
+    RTC_Init();
+#endif
+
+//    PIXEL_SCREEN_INIT();
+
+    USART_init();
 
     while(1) {}
 }

@@ -15,7 +15,7 @@ static void waitMls(int mls) {
     while (timerCount - timerState < mls + 1);
 }
 
-void INIT_LCD_IRQ() {
+void INIT_LCD() {
     static Lcd_PortType ports[] = {
             D4_GPIO_Port, D5_GPIO_Port, D6_GPIO_Port, D7_GPIO_Port};
 
@@ -82,7 +82,7 @@ void Lcd_init()
 {
     GPIOB->BSRR |= GPIO_BSRR_BR_3;
     GPIOB->BSRR |= GPIO_BSRR_BR_12;
-    waitMls(1000);
+    waitMls(100);
 
     lcd_write(0x3);
     waitMls(10);
