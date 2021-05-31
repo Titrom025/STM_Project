@@ -135,13 +135,13 @@ void RTC_IRQHandler(void) {
 #ifdef BUTTONS_CONTROLLER
     if (alarmDetected) {
         if (alarmSignalOn) {
-            GPIOC->BSRR = GPIO_BSRR_BR_8; // GPIO_BSRR_BR_7;
+            GPIOC->BSRR = GPIO_BSRR_BR_7; // GPIO_BSRR_BR_7;
         } else {
-            GPIOC->BSRR = GPIO_BSRR_BS_8; // GPIO_BSRR_BR_7;
+            GPIOC->BSRR = GPIO_BSRR_BS_7; // GPIO_BSRR_BR_7;
         }
         alarmSignalOn = !alarmSignalOn;
     } else {
-        GPIOC->BSRR = GPIO_BSRR_BR_8; // GPIO_BSRR_BR_7;
+        GPIOC->BSRR = GPIO_BSRR_BR_7; // GPIO_BSRR_BR_7;
     }
 #endif
     HAL_RTC_AlarmIRQHandler(&hrtc);
@@ -163,7 +163,7 @@ void handleButton() {
 
     if (buttonPressed == USER_BUTTON) {
         if (alarmDetected) {
-            GPIOC->BSRR = GPIO_BSRR_BR_8;
+            GPIOC->BSRR = GPIO_BSRR_BR_7;
             alarmDetected = false;
             alarmOn = false;
             cursorPosition = 14;
