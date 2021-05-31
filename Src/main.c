@@ -85,7 +85,7 @@ static void USART_init(){
 
 int main(void) {
     SystemClock_Config();
-    SET_SYSTICK_TIMES(1000);
+    SET_SYSTICK_TIMES(10000);
 
 #ifdef BUTTONS_CONTROLLER
     BUTTONS_INIT();

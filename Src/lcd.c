@@ -82,19 +82,19 @@ void Lcd_init()
 {
     GPIOB->BSRR |= GPIO_BSRR_BR_3;
     GPIOB->BSRR |= GPIO_BSRR_BR_12;
+    waitMls(1000);
+
+    lcd_write(0x3);
     waitMls(100);
 
     lcd_write(0x3);
-    waitMls(10);
+    waitMls(100);
 
     lcd_write(0x3);
-    waitMls(10);
-
-    lcd_write(0x3);
-    waitMls(10);
+    waitMls(100);
 
     lcd_write(0x2);
-    waitMls(10);
+    waitMls(100);
 
     lcd_write_command(0x20);
     lcd_write_command(0x08);
