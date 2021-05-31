@@ -12,8 +12,6 @@ volatile static bool led_states[5];
 volatile static int led_buttons_count[5];
 int lastPressed = NO_BUTTON;
 
-int screen[8];
-
 uint8_t incoming_messages = -1;
 uint8_t outcoming_messages = -1;
 
@@ -92,6 +90,58 @@ void SysTick_Handler() {
     #endif
 
     #ifdef SCREEN_CONTROLLER
+    handleButton();
+#endif
+}
+
+
+void USART3_4_IRQHandler(void){
+    if (USART3->ISR & USART_ISR_TC){
+        USART3->ICR |= USART_ICR_TCCF;
+        USART3->ICR |= USART_ICR_IDLECF;
+    }else if(USART3->ISR & USART_ISR_RXNE){
+        incoming_messages = (uint8_t)USART3->RDR;
+        USART3->TDR = outcoming_messages;
+    }
+}
+
+void RTC_IRQHandler(void) {
+    GPIOC->MODER |= GPIO_MODER_MODER8_0;
+    HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+
+    HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BCD);
+
+    if (editMode == false && alarmMode == false) {
+        drawOnlyChanges(&editTime);
+        editTime.Seconds = sTime.Seconds;
+        editTime.Minutes = sTime.Minutes;
+        editTime.Hours = sTime.Hours;
+        GPIOC->BSRR |= GPIO_BSRR_BR_8;
+    } else {
+
+        GPIOC->BSRR |= GPIO_BSRR_BS_8;
+    }
+
+    if (alarmOn &&
+        alarmTime.Hours == sTime.Hours &&
+        alarmTime.Minutes == sTime.Minutes &&
+        alarmTime.Seconds == sTime.Seconds) {
+        alarmDetected = true;
+    }
+
+    if (alarmDetected) {
+        if (alarmSignalOn) {
+            GPIOC->BSRR = GPIO_BSRR_BR_8; // GPIO_BSRR_BR_7;
+        } else {
+            GPIOC->BSRR = GPIO_BSRR_BS_8; // GPIO_BSRR_BR_7;
+        }
+        alarmSignalOn = !alarmSignalOn;
+    }
+
+    HAL_RTC_AlarmIRQHandler(&hrtc);
+}
+
+void handleButton() {
     buttonPressed = incoming_messages;
     outcoming_messages = alarmDetected;
     if (buttonPressed == NO_BUTTON) {
@@ -132,7 +182,7 @@ void SysTick_Handler() {
 
     if (buttonPressed == TOP_BUTTON) {
         if (editMode) {
-            changeValue(&editTime, true);
+            updateSelectedValue(&editTime, cursorPosition, true);
         } else {
             if (cursorPosition == 14) {
                 cursorPosition = 4;
@@ -157,13 +207,13 @@ void SysTick_Handler() {
                 cursorPosition = 14;
                 Lcd_cursor(0, cursorPosition);
             } else {
-                changeValue(&alarmTime, true);
+                updateSelectedValue(&alarmTime, cursorPosition, true);
             }
         }
 
     } else if (buttonPressed == DOWN_BUTTON) {
         if (editMode) {
-            changeValue(&editTime, false);
+            updateSelectedValue(&editTime, cursorPosition, false);
         } else {
             if (cursorPosition == 14) {
                 cursorPosition = 4;
@@ -188,7 +238,7 @@ void SysTick_Handler() {
                 cursorPosition = 14;
                 Lcd_cursor(0, cursorPosition);
             } else {
-                changeValue(&alarmTime, false);
+                updateSelectedValue(&alarmTime, cursorPosition, false);
             }
         }
 
@@ -227,81 +277,4 @@ void SysTick_Handler() {
             Lcd_cursor(0, cursorPosition);
         }
     }
-#endif
-}
-
-
-void USART3_4_IRQHandler(void){
-    if (USART3->ISR & USART_ISR_TC){
-        USART3->ICR |= USART_ICR_TCCF;
-        USART3->ICR |= USART_ICR_IDLECF;
-    }else if(USART3->ISR & USART_ISR_RXNE){
-        incoming_messages = (uint8_t)USART3->RDR;
-        USART3->TDR = outcoming_messages;
-    }
-}
-
-void RTC_IRQHandler(void) {
-    GPIOC->MODER |= GPIO_MODER_MODER8_0;
-    if (HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK) { Error_Handler(); }
-
-    if (HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
-
-    screen[2] = sTime.Hours;
-    screen[1] = sTime.Minutes;
-    screen[0] = sTime.Seconds;
-
-    if (editMode == false && alarmMode == false) {
-        drawOnlyChanges(&editTime);
-        editTime.Seconds = sTime.Seconds;
-        editTime.Minutes = sTime.Minutes;
-        editTime.Hours = sTime.Hours;
-        GPIOC->BSRR |= GPIO_BSRR_BR_8;
-    } else {
-
-        GPIOC->BSRR |= GPIO_BSRR_BS_8;
-    }
-
-    if (alarmOn &&
-        alarmTime.Hours == sTime.Hours &&
-        alarmTime.Minutes == sTime.Minutes &&
-        alarmTime.Seconds == sTime.Seconds) {
-        alarmDetected = true;
-    }
-
-    if (alarmDetected) {
-        if (alarmSignalOn) {
-            GPIOC->BSRR = GPIO_BSRR_BR_8; // GPIO_BSRR_BR_7;
-        } else {
-            GPIOC->BSRR = GPIO_BSRR_BS_8; // GPIO_BSRR_BR_7;
-        }
-        alarmSignalOn = !alarmSignalOn;
-    }
-
-    HAL_RTC_AlarmIRQHandler(&hrtc);
-}
-
-void SPI2_IRQHandler(void) {
-    static int index = 0;
-
-    if ((SPI2->SR & SPI_SR_RXNE)) {
-        GPIOA->BSRR = GPIO_BSRR_BS_8;
-        SPI2->DR;
-
-        GPIOA->BSRR = GPIO_BSRR_BR_8;
-        SPI2->DR = screen[index] | (1 << (index + 8));
-        index = (index + 1) % 8;
-    }
-}
-
-void Error_Handler(void) {
-    screen[0] = 129;
-    screen[1] = 66;
-    screen[2] = 36;
-    screen[3] = 24;
-    screen[4] = 24;
-    screen[5] = 36;
-    screen[6] = 66;
-    screen[7] = 129;
-    while (1) {}
 }

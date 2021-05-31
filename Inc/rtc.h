@@ -5,6 +5,6 @@
 #include "stdbool.h"
 
 void RTC_Init(void);
-void changeValue(RTC_TimeTypeDef *time, bool up);
+void updateSelectedValue(RTC_TimeTypeDef *time, int selectedValue, bool up);
 
 #endif

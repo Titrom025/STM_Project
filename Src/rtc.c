@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include "rtc.h"
-#include "IRQ_Handlers.h"
 #include "lcd.h"
 
 extern int cursorPosition;
@@ -16,7 +15,7 @@ void RTC_Init(void) {
     hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
     hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
     hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-    if (HAL_RTC_Init(&hrtc) != HAL_OK) { Error_Handler(); }
+    HAL_RTC_Init(&hrtc);
 
     sAlarm.AlarmTime.Hours = 0x0;
     sAlarm.AlarmTime.Minutes = 0x0;
@@ -29,15 +28,15 @@ void RTC_Init(void) {
     sAlarm.AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE;
     sAlarm.AlarmDateWeekDay = 0x1;
     sAlarm.Alarm = RTC_ALARM_A;
-    if (HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
+    HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BCD);
 }
 
-void changeValue(RTC_TimeTypeDef *time, bool up) {
+void updateSelectedValue(RTC_TimeTypeDef *time, int selectedValue, bool up) {
     int diff = 1;
     if (up == false)
         diff = -1;
 
-    switch (cursorPosition) {
+    switch (selectedValue) {
         case HOURS_T: {
             time->Hours = ((time->Hours / 10 * 10 + 10 * diff + 30) % 30) + ((time->Hours) % 10);
             if (time->Hours > 23) {
@@ -72,7 +71,6 @@ void changeValue(RTC_TimeTypeDef *time, bool up) {
             drawDigit(time->Seconds / 10);
             break;
         }
-
         case SECONDS_U: {
             time->Seconds = (time->Seconds / 10) * 10 + ((time->Seconds + 10 + diff) % 10);
             drawDigit(time->Seconds % 10);

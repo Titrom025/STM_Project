@@ -68,14 +68,14 @@ Lcd_HandleTypeDef Lcd_create(
 void GPIO_LCD_INIT() {
     RCC->AHBENR |= RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN;
 
-    RW_SET_MODER    // pixel RW
-    D4_SET_MODER    // pixel D4
-    D5_SET_MODER    // pixel D5
-    D6_SET_MODER    // pixel D6
-    D7_SET_MODER    // pixel D7
-    RS_SET_MODER    // pixel RS
-    EN_SET_MODER    // pixel EN
-    LIGHT_SET_MODER // pixel Light
+    RW_SET_MODER
+    D4_SET_MODER
+    D5_SET_MODER
+    D6_SET_MODER
+    D7_SET_MODER
+    RS_SET_MODER
+    EN_SET_MODER
+    LIGHT_SET_MODER
 }
 
 void Lcd_init()
@@ -102,14 +102,14 @@ void Lcd_init()
     lcd_write_command(0b00000110);
 
     lcd_write_command(0x40);
-    lcd_write_data(0b00000000);
-    lcd_write_data(0b00000100);
-    lcd_write_data(0b00001110);
-    lcd_write_data(0b00001110);
-    lcd_write_data(0b00001110);
-    lcd_write_data(0b00011111);
-    lcd_write_data(0b00000100);
-    lcd_write_data(0b00000000);
+    lcd_write_data(0x00);
+    lcd_write_data(0x04);
+    lcd_write_data(0x0E);
+    lcd_write_data(0x0E);
+    lcd_write_data(0x0E);
+    lcd_write_data(0X1F);
+    lcd_write_data(0x04);
+    lcd_write_data(0x00);
 }
 
 /**
@@ -168,30 +168,30 @@ void drawOnlyChanges(RTC_TimeTypeDef *time) {
  */
 void Lcd_cursor(uint8_t row, uint8_t col)
 {
-	lcd_write_command(SET_DDRAM_ADDR + ROW_16[row] + col);
+	lcd_write_command(0x80 + ROW_16[row] + col);
 }
 
 /**
  * Clear the screen
  */
 void Lcd_clear() {
-	lcd_write_command(CLEAR_DISPLAY);
+	lcd_write_command(0x01);
 }
 
 int checkForBusy() {
-    HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, LCD_COMMAND_REG);
-    HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, LCD_DATA_REG);			// Write to data register
+    HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, 0);
+    HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, 1);			// Write to data register
 
     lcd_write(0);
     lcd_write(0);
 
-    HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, LCD_COMMAND_REG);
+    HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, 0);
     return HAL_GPIO_ReadPin(lcd.rw_port, lcd.rw_pin) == GPIO_PIN_SET;
 }
 
 void lcd_write_command(uint8_t command)
 {
-	HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, LCD_COMMAND_REG);		// Write to command register
+	HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, 0);		// Write to command register
 
     lcd_write(command >> 4);
     lcd_write(command & 0x0F);
@@ -199,7 +199,7 @@ void lcd_write_command(uint8_t command)
 
 void lcd_write_data(uint8_t data)
 {
-	HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, LCD_DATA_REG);			// Write to data register
+	HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, 1);			// Write to data register
 
     lcd_write(data >> 4);
     lcd_write(data & 0x0F);
