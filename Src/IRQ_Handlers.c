@@ -12,8 +12,8 @@ volatile static bool led_states[5];
 volatile static int led_buttons_count[5];
 int lastPressed = NO_BUTTON;
 
-uint8_t incoming_messages = -1;
-uint8_t outcoming_messages = -1;
+uint8_t incoming_messages = 0;
+uint8_t outcoming_messages = 0;
 
 extern RTC_HandleTypeDef hrtc;
 extern RTC_DateTypeDef sDate;
@@ -140,6 +140,8 @@ void RTC_IRQHandler(void) {
             GPIOC->BSRR = GPIO_BSRR_BS_8; // GPIO_BSRR_BR_7;
         }
         alarmSignalOn = !alarmSignalOn;
+    } else {
+        GPIOC->BSRR = GPIO_BSRR_BR_8; // GPIO_BSRR_BR_7;
     }
 #endif
     HAL_RTC_AlarmIRQHandler(&hrtc);
@@ -163,6 +165,7 @@ void handleButton() {
         if (alarmDetected) {
             GPIOC->BSRR = GPIO_BSRR_BR_8;
             alarmDetected = false;
+            alarmOn = false;
             cursorPosition = 14;
             Lcd_cursor(0, cursorPosition);
             Lcd_string(" ");
