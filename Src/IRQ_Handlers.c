@@ -43,8 +43,6 @@ void enterEditMode() {
 }
 
 void enterAlarmMode() {
-    if (HAL_RTC_SetTime(&hrtc, &editTime, RTC_FORMAT_BIN) != HAL_OK) { Error_Handler(); }
-
     Lcd_clear();
     cursorPosition = 0;
     Lcd_cursor(0, cursorPosition);
@@ -67,6 +65,7 @@ void enterAlarmMode() {
 }
 
 void enterDefaultMode() {
+    HAL_RTC_SetTime(&hrtc, &editTime, RTC_FORMAT_BIN);
     cursorPosition = 0;
     Lcd_cursor(0, cursorPosition);
     Lcd_clear();
@@ -74,7 +73,7 @@ void enterDefaultMode() {
     lcd_write_command(0b00001100);
     Lcd_clear();
     char buffer[16];
-    sprintf(buffer, "    %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+    sprintf(buffer, "    %02d:%02d:%02d", editTime.Hours, editTime.Minutes, editTime.Seconds);
     Lcd_string(buffer);
     if (alarmOn) {
         cursorPosition = 14;
@@ -120,7 +119,6 @@ void SysTick_Handler() {
             alarmMode = true;
             enterAlarmMode();
         } else if (alarmMode) {
-            editMode = false;
             alarmMode = false;
             enterDefaultMode();
         } else {
@@ -241,25 +239,10 @@ void USART3_4_IRQHandler(void){
         incoming_messages = (uint8_t)USART3->RDR;
         USART3->TDR = outcoming_messages;
     }
-
-    if (incoming_messages > 0) {
-        GPIOC->BSRR = GPIO_BSRR_BS_8;
-    } else {
-        GPIOC->BSRR = GPIO_BSRR_BR_8;
-    }
 }
 
 void RTC_IRQHandler(void) {
-    static int val = 0;
-    RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
-    GPIOC->MODER |= GPIO_MODER_MODER9_0;
-    if (val) {
-        GPIOC->BSRR = GPIO_BSRR_BR_9;
-    } else {
-        GPIOC->BSRR = GPIO_BSRR_BS_9;
-    }
-    val = !val;
-
+    GPIOC->MODER |= GPIO_MODER_MODER8_0;
     if (HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN) != HAL_OK) { Error_Handler(); }
 
     if (HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK) { Error_Handler(); }
@@ -273,6 +256,10 @@ void RTC_IRQHandler(void) {
         editTime.Seconds = sTime.Seconds;
         editTime.Minutes = sTime.Minutes;
         editTime.Hours = sTime.Hours;
+        GPIOC->BSRR |= GPIO_BSRR_BR_8;
+    } else {
+
+        GPIOC->BSRR |= GPIO_BSRR_BS_8;
     }
 
     if (alarmOn &&

@@ -10,20 +10,20 @@ void SET_SYSTICK_TIMES(uint32_t timesInSecond) {
     SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk | SysTick_CTRL_TICKINT_Msk;
 }
 
-void GPI_INIT() {
-    RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
-    SPI2->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_BR | SPI_CR1_MSTR | SPI_CR1_CPOL | SPI_CR1_CPHA;
-    SPI2->CR2 = SPI_CR2_DS | SPI_CR2_RXNEIE;
-    SPI2->CR1 |= SPI_CR1_SPE;
-
-    RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
-
-    GPIOB->AFR[1] |= (0 << 4 * (13 - 8)) | (0 << 4 * (15 - 8));
-    GPIOB->MODER |= GPIO_MODER_MODER13_1 | GPIO_MODER_MODER15_1;
-
-    RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
-    GPIOA->MODER |= GPIO_MODER_MODER8_0;
-}
+//void GPI_INIT() {
+//    RCC->APB1ENR |= RCC_APB1ENR_SPI2EN;
+//    SPI2->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_BR | SPI_CR1_MSTR | SPI_CR1_CPOL | SPI_CR1_CPHA;
+//    SPI2->CR2 = SPI_CR2_DS | SPI_CR2_RXNEIE;
+//    SPI2->CR1 |= SPI_CR1_SPE;
+//
+//    RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
+//
+//    GPIOB->AFR[1] |= (0 << 4 * (13 - 8)) | (0 << 4 * (15 - 8));
+//    GPIOB->MODER |= GPIO_MODER_MODER13_1 | GPIO_MODER_MODER15_1;
+//
+//    RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+//    GPIOA->MODER |= GPIO_MODER_MODER8_0;
+//}
 
 void BUTTONS_INIT() {
     RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
@@ -40,12 +40,6 @@ void BUTTONS_INIT() {
     GPIOA->PUPDR |= GPIO_PUPDR_PUPDR0_1;
     GPIOA->PUPDR |= GPIO_PUPDR_PUPDR4_1;
     GPIOA->PUPDR |= GPIO_PUPDR_PUPDR5_1;
-}
-
-void PIXEL_SCREEN_INIT() {
-    GPI_INIT();
-    NVIC_EnableIRQ(SPI2_IRQn);
-    SPI2->DR = 0;
 }
 
 void SystemClock_Config(void)
@@ -114,11 +108,9 @@ int main(void) {
 #endif
 
 #ifdef SCREEN_CONTROLLER
-    INIT_LCD();
     RTC_Init();
+    INIT_LCD();
 #endif
-
-//    PIXEL_SCREEN_INIT();
 
     USART_init();
 
