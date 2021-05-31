@@ -90,6 +90,8 @@ void SysTick_Handler() {
     #endif
 
     #ifdef SCREEN_CONTROLLER
+    buttonPressed = incoming_messages;
+    outcoming_messages = alarmDetected;
     handleButton();
 #endif
 }
@@ -106,7 +108,7 @@ void USART3_4_IRQHandler(void){
 }
 
 void RTC_IRQHandler(void) {
-    GPIOC->MODER |= GPIO_MODER_MODER8_0;
+#ifdef SCREEN_CONTROLLER
     HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
 
     HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BCD);
@@ -128,7 +130,9 @@ void RTC_IRQHandler(void) {
         alarmTime.Seconds == sTime.Seconds) {
         alarmDetected = true;
     }
+#endif
 
+#ifdef BUTTONS_CONTROLLER
     if (alarmDetected) {
         if (alarmSignalOn) {
             GPIOC->BSRR = GPIO_BSRR_BR_8; // GPIO_BSRR_BR_7;
@@ -137,13 +141,11 @@ void RTC_IRQHandler(void) {
         }
         alarmSignalOn = !alarmSignalOn;
     }
-
+#endif
     HAL_RTC_AlarmIRQHandler(&hrtc);
 }
 
 void handleButton() {
-    buttonPressed = incoming_messages;
-    outcoming_messages = alarmDetected;
     if (buttonPressed == NO_BUTTON) {
         lastPressed = NO_BUTTON;
         return;

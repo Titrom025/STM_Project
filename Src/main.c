@@ -85,14 +85,15 @@ static void USART_init(){
 
 int main(void) {
     SystemClock_Config();
-    SET_SYSTICK_TIMES(10000);
+    SET_SYSTICK_TIMES(1000);
+
+    RTC_Init();
 
 #ifdef BUTTONS_CONTROLLER
     BUTTONS_INIT();
 #endif
 
 #ifdef SCREEN_CONTROLLER
-    RTC_Init();
     INIT_LCD();
 #endif
 
