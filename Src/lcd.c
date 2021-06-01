@@ -26,26 +26,25 @@ void INIT_LCD() {
 }
 
 Lcd_HandleTypeDef Lcd_create(
-		Lcd_PortType port[], Lcd_PinType pin[],
-		Lcd_PortType rs_port, Lcd_PinType rs_pin,
-		Lcd_PortType en_port, Lcd_PinType en_pin,
-        Lcd_PortType rw_port, Lcd_PinType rw_pin)
-{
-	lcd.en_pin = en_pin;
-	lcd.en_port = en_port;
+        Lcd_PortType port[], Lcd_PinType pin[],
+        Lcd_PortType rs_port, Lcd_PinType rs_pin,
+        Lcd_PortType en_port, Lcd_PinType en_pin,
+        Lcd_PortType rw_port, Lcd_PinType rw_pin) {
+    lcd.en_pin = en_pin;
+    lcd.en_port = en_port;
 
-	lcd.rs_pin = rs_pin;
-	lcd.rs_port = rs_port;
+    lcd.rs_pin = rs_pin;
+    lcd.rs_port = rs_port;
 
-	lcd.rw_pin = rw_pin;
-	lcd.rw_port = rw_port;
+    lcd.rw_pin = rw_pin;
+    lcd.rw_port = rw_port;
 
-	lcd.data_pin = pin;
-	lcd.data_port = port;
+    lcd.data_pin = pin;
+    lcd.data_port = port;
 
     GPIO_LCD_INIT();
 
-	Lcd_init();
+    Lcd_init();
 
     ENABLE_LIGHT
 
@@ -57,7 +56,7 @@ Lcd_HandleTypeDef Lcd_create(
     char buffer[16];
     sprintf(buffer, "    %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
     Lcd_string(buffer);
-	return lcd;
+    return lcd;
 }
 
 
@@ -78,8 +77,7 @@ void GPIO_LCD_INIT() {
     LIGHT_SET_MODER
 }
 
-void Lcd_init()
-{
+void Lcd_init() {
     GPIOB->BSRR |= GPIO_BSRR_BR_3;
     GPIOB->BSRR |= GPIO_BSRR_BR_12;
     waitMls(100);
@@ -96,7 +94,7 @@ void Lcd_init()
     lcd_write(0x2);
     waitMls(10);
 
-    lcd_write_command(0x20);
+    lcd_write_command(0x28);
     lcd_write_command(0x08);
     lcd_write_command(0x0C);
     lcd_write_command(0b00000110);
@@ -115,12 +113,10 @@ void Lcd_init()
 /**
  * Write a string on the current position
  */
-void Lcd_string(char * string)
-{
-	for(int i = 0; i < strlen(string); i++)
-	{
-		lcd_write_data(string[i]);
-	}
+void Lcd_string(char *string) {
+    for (int i = 0; i < strlen(string); i++) {
+        lcd_write_data(string[i]);
+    }
 }
 
 void drawDigit(int digit) {
@@ -166,21 +162,20 @@ void drawOnlyChanges(RTC_TimeTypeDef *time) {
 /**
  * Set the cursor position
  */
-void Lcd_cursor(uint8_t row, uint8_t col)
-{
-	lcd_write_command(0x80 + ROW_16[row] + col);
+void Lcd_cursor(uint8_t row, uint8_t col) {
+    lcd_write_command(0x80 + ROW_16[row] + col);
 }
 
 /**
  * Clear the screen
  */
 void Lcd_clear() {
-	lcd_write_command(0x01);
+    lcd_write_command(0x01);
 }
 
 int checkForBusy() {
     HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, 0);
-    HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, 1);			// Write to data register
+    HAL_GPIO_WritePin(lcd.rw_port, lcd.rw_pin, 1);            // Write to data register
 
     lcd_write(0);
     lcd_write(0);
@@ -189,32 +184,29 @@ int checkForBusy() {
     return HAL_GPIO_ReadPin(lcd.rw_port, lcd.rw_pin) == GPIO_PIN_SET;
 }
 
-void lcd_write_command(uint8_t command)
-{
-	HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, 0);		// Write to command register
+void lcd_write_command(uint8_t command) {
+    HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, 0);        // Write to command register
 
     lcd_write(command >> 4);
     lcd_write(command & 0x0F);
 }
 
-void lcd_write_data(uint8_t data)
-{
-	HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, 1);			// Write to data register
+void lcd_write_data(uint8_t data) {
+    HAL_GPIO_WritePin(lcd.rs_port, lcd.rs_pin, 1);            // Write to data register
 
     lcd_write(data >> 4);
     lcd_write(data & 0x0F);
 }
 
 
-void lcd_write(uint8_t data)
-{
-	for(int i = 0; i < 4; i++) {
-		HAL_GPIO_WritePin(lcd.data_port[i], lcd.data_pin[i], (data >> i) & 0x01);
-	}
+void lcd_write(uint8_t data) {
+    for (int i = 0; i < 4; i++) {
+        HAL_GPIO_WritePin(lcd.data_port[i], lcd.data_pin[i], (data >> i) & 0x01);
+    }
 
-	HAL_GPIO_WritePin(lcd.en_port, lcd.en_pin, 1);
+    HAL_GPIO_WritePin(lcd.en_port, lcd.en_pin, 1);
 
     for (int i = 0; i < SystemCoreClock / 100000; ++i) {}
 
-	HAL_GPIO_WritePin(lcd.en_port, lcd.en_pin, 0); 		// Data receive on falling edge
+    HAL_GPIO_WritePin(lcd.en_port, lcd.en_pin, 0);        // Data receive on falling edge
 }

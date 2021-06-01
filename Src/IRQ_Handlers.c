@@ -121,6 +121,12 @@ void RTC_IRQHandler(void) {
         editTime.Hours = sTime.Hours;
     }
 
+    cursorPosition = 0x40;
+    Lcd_cursor(0, cursorPosition);
+    char buffer[16];
+    sprintf(buffer, "    %02d:%02d:%02d", sTime.Hours, sTime.Minutes, sTime.Seconds);
+    Lcd_string(buffer);
+
     if (alarmOn &&
         alarmTime.Hours == sTime.Hours &&
         alarmTime.Minutes == sTime.Minutes &&

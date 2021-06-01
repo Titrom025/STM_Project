@@ -5,9 +5,87 @@
 extern int cursorPosition;
 RTC_HandleTypeDef hrtc;
 
-void RTC_Init(void) {
-    RTC_AlarmTypeDef sAlarm = {0};
+HAL_StatusTypeDef hehe(RTC_HandleTypeDef *hrtc) {
+    if (hrtc->State == HAL_RTC_STATE_RESET) {
+        /* Allocate lock resource and initialize it */
+        hrtc->Lock = HAL_UNLOCKED;
 
+        /* Initialize RTC MSP */
+        HAL_RTC_MspInit(hrtc);
+    }
+
+    /* Set RTC state */
+    hrtc->State = HAL_RTC_STATE_BUSY;
+
+    /* Disable the write protection for RTC registers */
+    __HAL_RTC_WRITEPROTECTION_DISABLE(hrtc);
+
+    /* Set Initialization mode */
+    if (RTC_EnterInitMode(hrtc) != HAL_OK) {
+        /* Enable the write protection for RTC registers */
+        __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
+
+        /* Set RTC state */
+        hrtc->State = HAL_RTC_STATE_ERROR;
+
+        return HAL_ERROR;
+    } else {
+        /* Clear RTC_CR FMT, OSEL and POL Bits */
+        hrtc->Instance->CR &= ((uint32_t)
+                ~(RTC_CR_FMT | RTC_CR_OSEL | RTC_CR_POL));
+        /* Set RTC_CR register */
+        hrtc->Instance->CR |= (uint32_t)(hrtc->Init.HourFormat | hrtc->Init.OutPut | hrtc->Init.OutPutPolarity);
+
+        /* Configure the RTC PRER */
+        hrtc->Instance->PRER = (uint32_t)(hrtc->Init.SynchPrediv);
+        hrtc->Instance->PRER |= (uint32_t)(hrtc->Init.AsynchPrediv << 16U);
+
+        /* Exit Initialization mode */
+        hrtc->Instance->ISR &= (uint32_t)
+                ~RTC_ISR_INIT;
+
+        /* If  CR_BYPSHAD bit = 0, wait for synchro else this check is not needed */
+        if ((hrtc->Instance->CR & RTC_CR_BYPSHAD) == RESET) {
+            if (HAL_RTC_WaitForSynchro(hrtc) != HAL_OK) {
+                /* Enable the write protection for RTC registers */
+                __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
+
+                hrtc->State = HAL_RTC_STATE_ERROR;
+
+                return HAL_ERROR;
+            }
+        }
+
+        hrtc->Instance->TAFCR &= (uint32_t)
+                ~RTC_TAFCR_ALARMOUTTYPE;
+        hrtc->Instance->TAFCR |= (uint32_t)(hrtc->Init.OutPutType);
+
+        /* Enable the write protection for RTC registers */
+        __HAL_RTC_WRITEPROTECTION_ENABLE(hrtc);
+
+        /* Set RTC state */
+        hrtc->State = HAL_RTC_STATE_READY;
+
+        return HAL_OK;
+    }
+}
+
+void setAlarm() {
+    hrtc.Instance->WPR = 0xCAU;
+    hrtc.Instance->WPR = 0x53U;
+    hrtc.Instance->CR &= ~(RTC_CR_ALRAE);
+    hrtc.Instance->ISR = ~((0x00000100U) | RTC_ISR_INIT) | ((hrtc).Instance->ISR & RTC_ISR_INIT);
+    hrtc.Instance->ALRMAR = (1 << 16U) | (1 << 24U) | (RTC_ALARMMASK_ALL);
+    hrtc.Instance->CR |= RTC_CR_ALRAE;
+    hrtc.Instance->CR |= 0x00001000U;
+
+    EXTI->IMR |= EXTI_IMR_MR17;
+    EXTI->RTSR |= EXTI_IMR_MR17;
+
+    hrtc.Instance->WPR = 0xFFU;
+}
+
+void RTC_Init(void) {
     hrtc.Instance = RTC;
     hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
     hrtc.Init.AsynchPrediv = 127;
@@ -15,20 +93,9 @@ void RTC_Init(void) {
     hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
     hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
     hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
-    HAL_RTC_Init(&hrtc);
 
-    sAlarm.AlarmTime.Hours = 0x0;
-    sAlarm.AlarmTime.Minutes = 0x0;
-    sAlarm.AlarmTime.Seconds = 0x0;
-    sAlarm.AlarmTime.SubSeconds = 0x0;
-    sAlarm.AlarmTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-    sAlarm.AlarmTime.StoreOperation = RTC_STOREOPERATION_RESET;
-    sAlarm.AlarmMask = RTC_ALARMMASK_ALL;
-    sAlarm.AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_ALL;
-    sAlarm.AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE;
-    sAlarm.AlarmDateWeekDay = 0x1;
-    sAlarm.Alarm = RTC_ALARM_A;
-    HAL_RTC_SetAlarm_IT(&hrtc, &sAlarm, RTC_FORMAT_BCD);
+    hehe(&hrtc);
+    setAlarm();
 }
 
 void updateSelectedValue(RTC_TimeTypeDef *time, int selectedValue, bool up) {
